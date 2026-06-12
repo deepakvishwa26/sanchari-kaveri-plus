@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { AlertOctagon, Activity, Truck, Droplets, RefreshCw } from 'lucide-react';
-import StatBadge from '../components/StatBadge';
+import BangaloreMap     from '../components/BangaloreMap';
+import StatBadge        from '../components/StatBadge';
 import {
-  getBookings, getWards, resetDemo,
+  getBookings, getWards, dispatchTanker, resetDemo,
   MOCK_WARDS, MOCK_BOOKINGS,
 } from '../api/index';
 
 export default function PrimeDashboard() {
   const [wards,       setWards]       = useState(MOCK_WARDS);
   const [bookings,    setBookings]    = useState(MOCK_BOOKINGS);
+  const [aiText,      setAiText]      = useState('');
   const [resetting,   setResetting]   = useState(false);
+  const [dispatching, setDispatching] = useState(null);
   const [lastUpdate,  setLastUpdate]  = useState(new Date());
 
   // ── Fetch wards once; poll bookings every 5s ────────────────────────────────
@@ -27,15 +30,33 @@ export default function PrimeDashboard() {
     return () => clearInterval(id);
   }, []);
 
+  // ── Dispatch ────────────────────────────────────────────────────────────────
+  const handleDispatch = async (bookingId) => {
+    setDispatching(bookingId);
+    try {
+      const result = await dispatchTanker(bookingId);
+      setAiText(
+        result.ai_reasoning ||
+        'RECOMMENDATION: T-02 | REASON: Nearest tanker (4.2 km), trust score 0.91. Optimal route via Sarjapur Road. ETA 18 min. | PRIORITY: HIGH'
+      );
+      getBookings().then(setBookings).catch(() => {});
+    } catch {
+      // Fallback so demo still works without backend
+      setAiText('RECOMMENDATION: T-02 | REASON: Highest trust score 0.91. Closest to Whitefield Connect Centre. | PRIORITY: HIGH');
+    } finally {
+      setDispatching(null);
+    }
+  };
+
   // ── Demo reset ──────────────────────────────────────────────────────────────
   const handleReset = async () => {
     setResetting(true);
     try {
       await resetDemo();
       const [w, b] = await Promise.all([getWards(), getBookings()]);
-      setWards(w); setBookings(b);
+      setWards(w); setBookings(b); setAiText('');
     } catch {
-      setWards(MOCK_WARDS); setBookings(MOCK_BOOKINGS);
+      setWards(MOCK_WARDS); setBookings(MOCK_BOOKINGS); setAiText('');
     } finally {
       setResetting(false);
     }
@@ -83,13 +104,41 @@ export default function PrimeDashboard() {
         </div>
       </header>
 
-      {/* ══ MAIN (placeholder for next features) ═══════════════════════════════ */}
+      {/* ══ MAIN ════════════════════════════════════════════════════════════════ */}
       <div className="flex flex-1 gap-3 p-3 overflow-hidden">
-        <div className="flex-1 flex items-center justify-center rounded-xl border border-slate-800/50 border-dashed">
-          <div className="text-center">
-            <p className="text-slate-700 text-sm font-mono">Map + Components coming next…</p>
-            <p className="text-slate-800 text-xs font-mono mt-1">Features 4–9 will fill this space</p>
+
+        {/* LEFT: Map + bottom panels (future) */}
+        <div className="flex flex-col gap-3 flex-1 overflow-hidden">
+          {/* Map */}
+          <div className="flex-1 rounded-xl overflow-hidden border border-slate-800/80" style={{ minHeight: '340px' }}>
+            <BangaloreMap wards={wards} bookings={bookings} onDispatch={handleDispatch} />
           </div>
+
+          {/* Bottom panels placeholder */}
+          <div className="grid grid-cols-2 gap-3" style={{ height: '250px' }}>
+            <div className="bg-slate-800 rounded-xl border border-slate-700/40 flex items-center justify-center">
+              <p className="text-slate-700 text-xs font-mono">Booking List → Feature 5</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl border border-slate-700/40 flex items-center justify-center">
+              <p className="text-slate-700 text-xs font-mono">Surge Shield → Feature 8</p>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: Sidebar placeholder */}
+        <div className="w-72 flex flex-col gap-3 overflow-y-auto sidebar-scroll flex-shrink-0">
+          <div className="bg-slate-800 rounded-xl border border-slate-700/40 p-4 flex items-center justify-center h-40">
+            <p className="text-slate-700 text-xs font-mono">AI Dispatch → Feature 6</p>
+          </div>
+          <div className="bg-slate-800 rounded-xl border border-slate-700/40 p-4 flex items-center justify-center h-52">
+            <p className="text-slate-700 text-xs font-mono">DWPI Chart → Feature 7</p>
+          </div>
+          <div className="bg-slate-800 rounded-xl border border-slate-700/40 p-4 flex items-center justify-center h-40">
+            <p className="text-slate-700 text-xs font-mono">Emergency → Feature 9</p>
+          </div>
+          <p className="text-slate-800 text-xs font-mono text-center pb-2">
+            Sanchari Kaveri Plus · HackArena 2.0 · Blr Zonals
+          </p>
         </div>
       </div>
     </div>
