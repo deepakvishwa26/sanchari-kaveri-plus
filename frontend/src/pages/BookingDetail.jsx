@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -9,6 +9,15 @@ import {
   Truck,
 } from 'lucide-react';
 import { MOCK_BOOKINGS } from '../api/index';
+
+// ======== Geo → SVG projection ========
+const MIN_LNG = 77.62, MAX_LNG = 77.76, MIN_LAT = 12.89, MAX_LAT = 13.01;
+function mapCoord(lng, lat) {
+  return {
+    x: ((lng - MIN_LNG) / (MAX_LNG - MIN_LNG)) * 360 + 10,
+    y: ((MAX_LAT - lat) / (MAX_LAT - MIN_LAT)) * 156 + 10,
+  };
+}
 
 export default function BookingDetail() {
   const { id } = useParams();
@@ -39,6 +48,23 @@ export default function BookingDetail() {
     fetchBooking();
   }, [id]);
 
+  // Build SVG path from GeoJSON route data if available
+  const dynamicRoutePath = useMemo(() => {
+    if (!booking?.route_geojson?.geometry) return null;
+    try {
+      const coords = booking.route_geojson.geometry;
+      if (!Array.isArray(coords) || coords.length < 2) return null;
+      return coords
+        .map(([lng, lat], i) => {
+          const { x, y } = mapCoord(lng, lat);
+          return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+        })
+        .join(' ');
+    } catch {
+      return null;
+    }
+  }, [booking]);
+
   if (loading || !booking) {
     return (
       <div className="min-h-dvh bg-[#111008] flex items-center justify-center">
@@ -49,6 +75,12 @@ export default function BookingDetail() {
 
   const shortId = (booking.id || '').slice(0, 8).toUpperCase();
   const wardLabel = booking.ward_name || booking.ward_id?.replace('WARD_', '') || 'Unknown';
+  const distKm = booking.distance_km || 4.2;
+  const durMin = booking.duration_min || 15;
+  const ccLabel = booking.connect_centre || 'Whitefield CC';
+
+  // Fallback Bézier or dynamic polyline
+  const routeD = dynamicRoutePath || 'M 60 130 Q 190 40 320 46';
 
   return (
     <div className="min-h-dvh bg-[#111008] pb-6">
@@ -70,51 +102,62 @@ export default function BookingDetail() {
         </div>
       </header>
 
-      {/* ======== MAP AREA ======== */}
-      <div className="h-44 bg-[#0C1220] relative overflow-hidden map-grid">
-        {/* Map label */}
-        <span className="absolute top-2 left-2 text-[7px] text-white/25 uppercase tracking-wider z-10 font-semibold">
-          Bangalore — Live Route
-        </span>
+      {/* ======== MAP AREA — Self-contained inline SVG ======== */}
+      <div className="w-full bg-[#0C1220] overflow-hidden">
+        <svg viewBox="0 0 380 176" width="100%" preserveAspectRatio="xMidYMid meet">
+          {/* Grid pattern */}
+          <defs>
+            <pattern id="mapGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path
+                d="M 20 0 L 0 0 0 20"
+                fill="none"
+                stroke="rgba(255,255,255,0.025)"
+                strokeWidth="0.5"
+              />
+            </pattern>
+          </defs>
+          <rect width="380" height="176" fill="url(#mapGrid)" />
 
-        {/* Source pin */}
-        <div className="absolute bottom-10 left-8 z-10">
-          <div className="w-2.5 h-2.5 bg-[#0A7A8F] border-2 border-white rounded-full shadow-lg shadow-[#0A7A8F]/30" />
-          <div className="mt-1 text-[7.5px] text-[#0A7A8F] font-semibold whitespace-nowrap">
-            ● {booking.connect_centre || 'Whitefield CC'}
-          </div>
-        </div>
-
-        {/* Destination pin */}
-        <div className="absolute top-8 right-10 z-10">
-          <div className="mb-1 text-[7.5px] text-amber-400 font-semibold whitespace-nowrap text-right">
-            ◆ Delivery
-          </div>
-          <div className="w-2.5 h-2.5 bg-amber-400 border-2 border-white rounded-full shadow-lg shadow-amber-400/30 ml-auto" />
-        </div>
-
-        {/* Route line (SVG arc) */}
-        <svg
-          className="absolute inset-0 w-full h-full"
-          viewBox="0 0 430 176"
-          fill="none"
-          preserveAspectRatio="none"
-        >
+          {/* Route arc — dashed amber Bézier (or dynamic polyline) */}
           <path
-            d="M 50 140 Q 200 20 370 50"
+            id="routePath"
+            d={routeD}
             stroke="#F59E0B"
-            strokeWidth="1.5"
-            strokeDasharray="6 4"
+            strokeWidth="2"
             fill="none"
-            opacity="0.6"
-            className="animate-route-dash"
+            strokeDasharray="6 4"
           />
-        </svg>
 
-        {/* Distance badge */}
-        <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm text-amber-400 text-[8px] font-semibold px-2 py-0.5 rounded z-10">
-          {booking.distance_km || 4.2} km · ~{booking.duration_min || 15} min
-        </div>
+          {/* Origin pin — Connect Centre (bottom-left) */}
+          <circle cx="60" cy="130" r="6" fill="#0A7A8F" stroke="white" strokeWidth="2" />
+          <text x="60" y="148" textAnchor="middle" fontSize="7" fill="#0A7A8F" fontWeight="600">
+            {ccLabel}
+          </text>
+
+          {/* Destination pin — Delivery (top-right) */}
+          <circle cx="320" cy="46" r="6" fill="#F59E0B" stroke="white" strokeWidth="2" />
+          <text x="320" y="36" textAnchor="middle" fontSize="7" fill="#F59E0B" fontWeight="600">
+            Delivery
+          </text>
+
+          {/* Animated pulse dot tracking the route */}
+          <circle r="4" fill="#F59E0B" opacity="0.9">
+            <animateMotion dur="4s" repeatCount="indefinite">
+              <mpath href="#routePath" />
+            </animateMotion>
+          </circle>
+
+          {/* Distance badge */}
+          <rect x="272" y="152" width="100" height="18" rx="4" fill="rgba(0,0,0,0.6)" />
+          <text x="322" y="164" textAnchor="middle" fontSize="8" fill="#F59E0B" fontWeight="600">
+            {distKm} km · ~{durMin} min
+          </text>
+
+          {/* Map label */}
+          <text x="8" y="14" fontSize="7" fill="rgba(255,255,255,0.25)" letterSpacing="1.5" fontWeight="500">
+            BANGALORE — LIVE ROUTE
+          </text>
+        </svg>
       </div>
 
       {/* ======== BODY ======== */}
