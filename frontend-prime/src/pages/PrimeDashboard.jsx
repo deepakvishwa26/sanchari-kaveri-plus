@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AlertOctagon, Activity, Truck, Droplets, RefreshCw } from 'lucide-react';
 import BangaloreMap     from '../components/BangaloreMap';
+import BookingList      from '../components/BookingList';
 import StatBadge        from '../components/StatBadge';
 import {
   getBookings, getWards, dispatchTanker, resetDemo,
@@ -114,11 +115,9 @@ export default function PrimeDashboard() {
             <BangaloreMap wards={wards} bookings={bookings} onDispatch={handleDispatch} />
           </div>
 
-          {/* Bottom panels placeholder */}
+          {/* Bottom 2-column row */}
           <div className="grid grid-cols-2 gap-3" style={{ height: '250px' }}>
-            <div className="bg-slate-800 rounded-xl border border-slate-700/40 flex items-center justify-center">
-              <p className="text-slate-700 text-xs font-mono">Booking List → Feature 5</p>
-            </div>
+            <BookingList bookings={bookings} onDispatch={handleDispatch} lastUpdate={lastUpdate} />
             <div className="bg-slate-800 rounded-xl border border-slate-700/40 flex items-center justify-center">
               <p className="text-slate-700 text-xs font-mono">Surge Shield → Feature 8</p>
             </div>
