@@ -1,0 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   KAVERI LINK — Driver Interface
+   Industrial warm-dark theme
+   ======================================== */
+
+:root {
+  --bg-main: #111008;
+  --bg-card: #1C1810;
+  --bg-header: #1A1208;
+  --amber: #F59E0B;
+  --ai-purple: #8B5CF6;
+  --success: #16A34A;
+  color-scheme: dark;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: #fff;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+#root {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+  background-color: var(--bg-main);
+}
+
+/* ======== Scrollbar ======== */
+::-webkit-scrollbar {
+  width: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: 99px;
+}
+
+/* ======== OTP Input Cells ======== */
+.otp-cell {
+  caret-color: var(--amber);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.otp-cell:focus {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.08);
+  outline: none;
+}
+.otp-cell.filled {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* ======== Map Grid Overlay ======== */
+.map-grid {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 40px);
+}
+
+/* ======== Route Line ======== */
+.route-line {
+  position: absolute;
+  border: 1.5px dashed rgba(245, 158, 11, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ======== Animations ======== */
+@keyframes pulse-amber {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse-amber {
+  animation: pulse-amber 2s ease-in-out infinite;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.35s ease-out forwards;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-loading {
+  background: linear-gradient(90deg, #1C1810 25%, #2a2518 50%, #1C1810 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes beacon {
+  0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+.animate-beacon {
+  animation: beacon 2s infinite;
+}
+
+@keyframes route-dash {
+  to { stroke-dashoffset: -20; }
+}
+.animate-route-dash {
+  animation: route-dash 1s linear infinite;
+}
+
+/* ======== Tap interaction ======== */
+.tap-highlight {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+.tap-highlight:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* ======== Leaflet Map Overrides ======== */
+.leaflet-container {
+  background: #0C1220 !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+.leaflet-control-attribution {
+  display: none !important;
+}
+.leaflet-tile-pane {
+  opacity: 0.95;
+}
+/* Remove blue outlines on map interactions */
+.leaflet-container:focus {
+  outline: none !important;
+}
+.leaflet-marker-icon {
+  background: none !important;
+  border: none !important;
+}
