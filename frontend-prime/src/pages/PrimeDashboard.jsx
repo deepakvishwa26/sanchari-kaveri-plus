@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AlertOctagon, Activity, Truck, Droplets, RefreshCw } from 'lucide-react';
 import BangaloreMap     from '../components/BangaloreMap';
 import BookingList      from '../components/BookingList';
+import AIRecommendation from '../components/AIRecommendation';
 import StatBadge        from '../components/StatBadge';
 import {
   getBookings, getWards, dispatchTanker, resetDemo,
@@ -126,9 +127,7 @@ export default function PrimeDashboard() {
 
         {/* RIGHT: Sidebar placeholder */}
         <div className="w-72 flex flex-col gap-3 overflow-y-auto sidebar-scroll flex-shrink-0">
-          <div className="bg-slate-800 rounded-xl border border-slate-700/40 p-4 flex items-center justify-center h-40">
-            <p className="text-slate-700 text-xs font-mono">AI Dispatch → Feature 6</p>
-          </div>
+          <AIRecommendation text={aiText} />
           <div className="bg-slate-800 rounded-xl border border-slate-700/40 p-4 flex items-center justify-center h-52">
             <p className="text-slate-700 text-xs font-mono">DWPI Chart → Feature 7</p>
           </div>
