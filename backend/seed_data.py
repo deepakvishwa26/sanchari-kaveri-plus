@@ -10,12 +10,12 @@ def seed():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
-    # Clear all existing data
+    # Clear all existing data (order matters — bookings reference wards)
     db.query(AuditLog).delete()
     db.query(Booking).delete()
-    db.query(Ward).delete()
     db.query(Tanker).delete()
     db.query(ConnectCentre).delete()
+    db.query(Ward).delete()
     db.commit()
 
     # Wards
@@ -71,6 +71,9 @@ def seed():
     ]
     for c in centres:
         db.add(c)
+
+    # Commit wards, tankers, centres FIRST (bookings have FK to wards)
+    db.commit()
 
     # 3 pre-loaded demo bookings (map is never empty on demo day)
     demo_bookings = [
