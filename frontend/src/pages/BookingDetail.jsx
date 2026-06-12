@@ -1,32 +1,24 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Navigation,
   Brain,
   MapPin,
-  ChevronDown,
   Truck,
+  ExternalLink,
 } from 'lucide-react';
 import { MOCK_BOOKINGS } from '../api/index';
-
-// ======== Geo → SVG projection ========
-const MIN_LNG = 77.62, MAX_LNG = 77.76, MIN_LAT = 12.89, MAX_LAT = 13.01;
-function mapCoord(lng, lat) {
-  return {
-    x: ((lng - MIN_LNG) / (MAX_LNG - MIN_LNG)) * 360 + 10,
-    y: ((MAX_LAT - lat) / (MAX_LAT - MIN_LAT)) * 156 + 10,
-  };
-}
+import RouteMap from '../components/RouteMap';
 
 export default function BookingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [liveRoute, setLiveRoute] = useState(null);
 
   useEffect(() => {
-    // Try API first, fall back to mock
     async function fetchBooking() {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -40,30 +32,12 @@ export default function BookingDetail() {
       } catch {
         // fallback below
       }
-      // Mock fallback
       const mock = MOCK_BOOKINGS.find((b) => b.id === id) || MOCK_BOOKINGS[0];
       setBooking(mock);
       setLoading(false);
     }
     fetchBooking();
   }, [id]);
-
-  // Build SVG path from GeoJSON route data if available
-  const dynamicRoutePath = useMemo(() => {
-    if (!booking?.route_geojson?.geometry) return null;
-    try {
-      const coords = booking.route_geojson.geometry;
-      if (!Array.isArray(coords) || coords.length < 2) return null;
-      return coords
-        .map(([lng, lat], i) => {
-          const { x, y } = mapCoord(lng, lat);
-          return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-        })
-        .join(' ');
-    } catch {
-      return null;
-    }
-  }, [booking]);
 
   if (loading || !booking) {
     return (
@@ -75,12 +49,22 @@ export default function BookingDetail() {
 
   const shortId = (booking.id || '').slice(0, 8).toUpperCase();
   const wardLabel = booking.ward_name || booking.ward_id?.replace('WARD_', '') || 'Unknown';
-  const distKm = booking.distance_km || 4.2;
-  const durMin = booking.duration_min || 15;
-  const ccLabel = booking.connect_centre || 'Whitefield CC';
+  const ccLabel = booking.connect_centre || 'Whitefield Connect Centre';
+  const pickupLat = booking.connect_centre_lat || 12.985;
+  const pickupLng = booking.connect_centre_lng || 77.748;
+  const deliveryLat = booking.delivery_lat || 12.969;
+  const deliveryLng = booking.delivery_lng || 77.748;
 
-  // Fallback Bézier or dynamic polyline
-  const routeD = dynamicRoutePath || 'M 60 130 Q 190 40 320 46';
+  // Use live OSRM route data if available, otherwise booking defaults
+  const distKm = liveRoute?.distanceKm || booking.distance_km || 4.2;
+  const durMin = liveRoute?.durationMin || booking.duration_min || 15;
+
+  function handleStartNavigation() {
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${deliveryLat},${deliveryLng}&travelmode=driving`,
+      '_blank'
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-[#111008] pb-6">
@@ -102,63 +86,16 @@ export default function BookingDetail() {
         </div>
       </header>
 
-      {/* ======== MAP AREA — Self-contained inline SVG ======== */}
-      <div className="w-full bg-[#0C1220] overflow-hidden">
-        <svg viewBox="0 0 380 176" width="100%" preserveAspectRatio="xMidYMid meet">
-          {/* Grid pattern */}
-          <defs>
-            <pattern id="mapGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path
-                d="M 20 0 L 0 0 0 20"
-                fill="none"
-                stroke="rgba(255,255,255,0.025)"
-                strokeWidth="0.5"
-              />
-            </pattern>
-          </defs>
-          <rect width="380" height="176" fill="url(#mapGrid)" />
-
-          {/* Route arc — dashed amber Bézier (or dynamic polyline) */}
-          <path
-            id="routePath"
-            d={routeD}
-            stroke="#F59E0B"
-            strokeWidth="2"
-            fill="none"
-            strokeDasharray="6 4"
-          />
-
-          {/* Origin pin — Connect Centre (bottom-left) */}
-          <circle cx="60" cy="130" r="6" fill="#0A7A8F" stroke="white" strokeWidth="2" />
-          <text x="60" y="148" textAnchor="middle" fontSize="7" fill="#0A7A8F" fontWeight="600">
-            {ccLabel}
-          </text>
-
-          {/* Destination pin — Delivery (top-right) */}
-          <circle cx="320" cy="46" r="6" fill="#F59E0B" stroke="white" strokeWidth="2" />
-          <text x="320" y="36" textAnchor="middle" fontSize="7" fill="#F59E0B" fontWeight="600">
-            Delivery
-          </text>
-
-          {/* Animated pulse dot tracking the route */}
-          <circle r="4" fill="#F59E0B" opacity="0.9">
-            <animateMotion dur="4s" repeatCount="indefinite">
-              <mpath href="#routePath" />
-            </animateMotion>
-          </circle>
-
-          {/* Distance badge */}
-          <rect x="272" y="152" width="100" height="18" rx="4" fill="rgba(0,0,0,0.6)" />
-          <text x="322" y="164" textAnchor="middle" fontSize="8" fill="#F59E0B" fontWeight="600">
-            {distKm} km · ~{durMin} min
-          </text>
-
-          {/* Map label */}
-          <text x="8" y="14" fontSize="7" fill="rgba(255,255,255,0.25)" letterSpacing="1.5" fontWeight="500">
-            BANGALORE — LIVE ROUTE
-          </text>
-        </svg>
-      </div>
+      {/* ======== REAL LEAFLET MAP ======== */}
+      <RouteMap
+        pickupLat={pickupLat}
+        pickupLng={pickupLng}
+        pickupLabel={ccLabel}
+        deliveryLat={deliveryLat}
+        deliveryLng={deliveryLng}
+        deliveryLabel="Delivery"
+        onRouteInfo={(info) => setLiveRoute(info)}
+      />
 
       {/* ======== BODY ======== */}
       <div className="p-3 space-y-3">
@@ -175,7 +112,7 @@ export default function BookingDetail() {
                 Load at
               </div>
               <div className="text-white text-[10px] font-semibold mt-0.5 truncate">
-                {booking.connect_centre || 'Whitefield Connect Centre'}
+                {ccLabel}
               </div>
             </div>
           </div>
@@ -198,11 +135,11 @@ export default function BookingDetail() {
         {/* Route details pills */}
         <div className="flex gap-2 animate-slide-up" style={{ animationDelay: '60ms' }}>
           <div className="flex-1 bg-[#1C1810] border border-white/5 rounded-lg p-2 text-center">
-            <div className="text-white text-sm font-bold">{booking.distance_km || 4.2} km</div>
+            <div className="text-white text-sm font-bold">{distKm} km</div>
             <div className="text-stone-500 text-[8px] uppercase tracking-wide mt-0.5">Distance</div>
           </div>
           <div className="flex-1 bg-[#1C1810] border border-white/5 rounded-lg p-2 text-center">
-            <div className="text-white text-sm font-bold">{booking.duration_min || 15} min</div>
+            <div className="text-white text-sm font-bold">{durMin} min</div>
             <div className="text-stone-500 text-[8px] uppercase tracking-wide mt-0.5">ETA</div>
           </div>
           <div className="flex-1 bg-[#1C1810] border border-white/5 rounded-lg p-2 text-center">
@@ -229,15 +166,27 @@ export default function BookingDetail() {
           </p>
         </div>
 
-        {/* Start route CTA */}
+        {/* Start Google Maps navigation CTA */}
         <button
-          onClick={() => navigate(`/driver/${booking.id}/verify`)}
+          onClick={handleStartNavigation}
           className="w-full bg-amber-400 hover:bg-amber-500 text-[#111] font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 tap-highlight transition-colors animate-slide-up"
           style={{ animationDelay: '180ms' }}
           id="start-route-btn"
         >
           <Navigation className="w-4 h-4" />
           Start route navigation
+          <ExternalLink className="w-3 h-3 opacity-50" />
+        </button>
+
+        {/* Confirm delivery shortcut */}
+        <button
+          onClick={() => navigate(`/driver/${booking.id}/verify`)}
+          className="w-full bg-[#1C1810] border border-amber-500/20 hover:border-amber-500/40 text-amber-400 font-semibold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 tap-highlight transition-colors animate-slide-up"
+          style={{ animationDelay: '210ms' }}
+          id="arrived-btn"
+        >
+          <MapPin className="w-3.5 h-3.5" />
+          Arrived — Verify OTP &amp; Deliver
         </button>
 
         {/* Tanker info footer */}

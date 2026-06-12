@@ -138,3 +138,23 @@ body {
   transform: scale(0.98);
   opacity: 0.9;
 }
+
+/* ======== Leaflet Map Overrides ======== */
+.leaflet-container {
+  background: #0C1220 !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+.leaflet-control-attribution {
+  display: none !important;
+}
+.leaflet-tile-pane {
+  opacity: 0.95;
+}
+/* Remove blue outlines on map interactions */
+.leaflet-container:focus {
+  outline: none !important;
+}
+.leaflet-marker-icon {
+  background: none !important;
+  border: none !important;
+}
