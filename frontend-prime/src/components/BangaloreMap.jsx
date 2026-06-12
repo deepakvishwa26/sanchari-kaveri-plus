@@ -26,7 +26,7 @@ export default function BangaloreMap({ wards, bookings, onDispatch }) {
     <MapContainer
       center={[12.954, 77.690]}
       zoom={12}
-      style={{ height: '100%', width: '100%', borderRadius: '12px', minHeight: '420px' }}
+      style={{ height: '100%', width: '100%', borderRadius: '12px' }}
     >
       <TileLayer attribution={DARK_ATTR} url={DARK_TILE} />
 

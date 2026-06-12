@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { AlertOctagon, Activity, Truck, Droplets, RefreshCw } from 'lucide-react';
 import BangaloreMap     from '../components/BangaloreMap';
 import BookingList      from '../components/BookingList';
+import DWPIScoreCard    from '../components/DWPIScoreCard';
+import SurgeShield      from '../components/SurgeShield';
 import AIRecommendation from '../components/AIRecommendation';
 import StatBadge        from '../components/StatBadge';
 import {
   getBookings, getWards, dispatchTanker, resetDemo,
-  MOCK_WARDS, MOCK_BOOKINGS,
+  toggleEmergency, MOCK_WARDS, MOCK_BOOKINGS,
 } from '../api/index';
 
 export default function PrimeDashboard() {
@@ -64,6 +66,16 @@ export default function PrimeDashboard() {
     }
   };
 
+  // ── Emergency toggle ────────────────────────────────────────────────────────
+  const handleEmergency = async (wardId) => {
+    // Optimistic update first
+    setWards(prev => prev.map(w => w.id === wardId ? { ...w, emergency_mode: !w.emergency_mode } : w));
+    try {
+      await toggleEmergency(wardId);
+      getWards().then(setWards).catch(() => {});
+    } catch { /* optimistic update already applied */ }
+  };
+
   // ── Derived stats ───────────────────────────────────────────────────────────
   const pendingCount  = bookings.filter(b => b.status === 'PENDING').length;
   const criticalWards = wards.filter(w => w.dwpi_score >= 0.7).length;
@@ -109,31 +121,62 @@ export default function PrimeDashboard() {
       {/* ══ MAIN ════════════════════════════════════════════════════════════════ */}
       <div className="flex flex-1 gap-3 p-3 overflow-hidden">
 
-        {/* LEFT: Map + bottom panels (future) */}
-        <div className="flex flex-col gap-3 flex-1 overflow-hidden">
+        {/* LEFT: Map + Booking List + Surge Shield */}
+        <div className="flex flex-col gap-2 flex-1 overflow-y-auto sidebar-scroll min-w-0">
           {/* Map */}
-          <div className="flex-1 rounded-xl overflow-hidden border border-slate-800/80" style={{ minHeight: '340px' }}>
+          <div className="rounded-xl overflow-hidden border border-slate-800/80 flex-shrink-0" style={{ height: 'calc(100vh - 350px)', minHeight: '200px' }}>
             <BangaloreMap wards={wards} bookings={bookings} onDispatch={handleDispatch} />
           </div>
 
           {/* Bottom 2-column row */}
-          <div className="grid grid-cols-2 gap-3" style={{ height: '250px' }}>
+          <div className="grid grid-cols-2 gap-2 flex-shrink-0" style={{ height: '260px' }}>
             <BookingList bookings={bookings} onDispatch={handleDispatch} lastUpdate={lastUpdate} />
-            <div className="bg-slate-800 rounded-xl border border-slate-700/40 flex items-center justify-center">
-              <p className="text-slate-700 text-xs font-mono">Surge Shield → Feature 8</p>
-            </div>
+            <SurgeShield />
           </div>
         </div>
 
-        {/* RIGHT: Sidebar placeholder */}
+        {/* RIGHT: Sidebar */}
         <div className="w-72 flex flex-col gap-3 overflow-y-auto sidebar-scroll flex-shrink-0">
+          {/* AI Recommendation */}
           <AIRecommendation text={aiText} />
-          <div className="bg-slate-800 rounded-xl border border-slate-700/40 p-4 flex items-center justify-center h-52">
-            <p className="text-slate-700 text-xs font-mono">DWPI Chart → Feature 7</p>
+
+          {/* DWPI Bar Chart */}
+          <DWPIScoreCard wards={wards} />
+
+          {/* Emergency Mode Controls */}
+          <div className="bg-slate-800 rounded-xl p-4 border border-slate-700/40">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertOctagon size={12} className="text-red-400" />
+              <h2 className="text-xs font-bold text-slate-100 uppercase tracking-widest">Emergency Mode</h2>
+            </div>
+            <div className="space-y-2">
+              {wards
+                .filter(w => w.dwpi_score >= 0.5)
+                .sort((a, b) => b.dwpi_score - a.dwpi_score)
+                .map(w => (
+                  <div key={w.id} className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-300 text-xs font-medium truncate">{w.name}</p>
+                      <p className={`font-mono text-xs ${w.dwpi_score >= 0.7 ? 'text-red-400' : 'text-amber-400'}`}>
+                        {w.dwpi_score.toFixed(2)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleEmergency(w.id)}
+                      className={`text-xs px-2.5 py-1 rounded-full font-bold transition-all duration-150 flex-shrink-0 ${
+                        w.emergency_mode
+                          ? 'bg-red-600 text-white shadow-lg shadow-red-950'
+                          : 'bg-slate-700 text-slate-500 hover:bg-red-950 hover:text-red-400 border border-slate-600'
+                      }`}
+                    >
+                      {w.emergency_mode ? '🚨 ACTIVE' : 'Activate'}
+                    </button>
+                  </div>
+                ))}
+            </div>
           </div>
-          <div className="bg-slate-800 rounded-xl border border-slate-700/40 p-4 flex items-center justify-center h-40">
-            <p className="text-slate-700 text-xs font-mono">Emergency → Feature 9</p>
-          </div>
+
+          {/* Footer */}
           <p className="text-slate-800 text-xs font-mono text-center pb-2">
             Sanchari Kaveri Plus · HackArena 2.0 · Blr Zonals
           </p>
