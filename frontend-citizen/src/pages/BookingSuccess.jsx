@@ -12,6 +12,7 @@ export default function BookingSuccess() {
     citizen_name: 'Priya Sharma',
     ward_id: 'WARD_WHITEFIELD',
     volume_liters: 12000,
+    address: '42, 2nd Cross, EPIP Zone, Whitefield',
   };
 
   const ward = WARD_OPTIONS.find(w => w.value === (form.ward_id || booking.ward_id));
@@ -23,6 +24,7 @@ export default function BookingSuccess() {
   const price = volume === 12000 ? '₹1,290' : '₹645';
   const privateCost = volume === 12000 ? '₹3,200' : '₹1,600';
   const waitHours = booking.estimated_wait_hours || 4;
+  const address = form.address || '42, 2nd Cross, EPIP Zone, Whitefield';
 
   return (
     <div className="min-h-screen bg-[#0F172A] flex items-start justify-center">
@@ -50,14 +52,14 @@ export default function BookingSuccess() {
             Delivery OTP — Share only with driver
           </p>
 
-          {/* OTP Digits */}
+          {/* OTP Digits — auto-generated */}
           <p className="text-5xl font-mono font-bold text-white tracking-[10px] leading-tight">
             {otp}
           </p>
 
           {/* Note */}
           <p className="text-slate-500 text-[8px] mt-2">
-            Generated securely · expires on delivery
+            Auto-generated securely · expires on delivery
           </p>
         </div>
 
@@ -67,6 +69,12 @@ export default function BookingSuccess() {
           <div className="flex justify-between text-sm">
             <span className="text-slate-400">Ward</span>
             <span className="text-white font-semibold">{wardLabel}</span>
+          </div>
+
+          {/* Address */}
+          <div className="flex justify-between text-sm gap-4">
+            <span className="text-slate-400 shrink-0">Address</span>
+            <span className="text-white font-semibold text-right">{address}</span>
           </div>
 
           {/* Volume */}

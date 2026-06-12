@@ -18,6 +18,7 @@ export default function BookingPage() {
     citizen_name: 'Priya Sharma',
     phone: '98765 43210',
     ward_id: 'WARD_WHITEFIELD',
+    address: '42, 2nd Cross, EPIP Zone, Whitefield',
     volume_liters: 12000,
   });
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,7 @@ export default function BookingPage() {
     if (!form.citizen_name.trim()) { setError('Please enter your name.'); return; }
     if (!form.phone.trim()) { setError('Please enter your mobile number.'); return; }
     if (!form.ward_id) { setError('Please select your ward.'); return; }
+    if (!form.address.trim()) { setError('Please enter your delivery address.'); return; }
 
     setLoading(true);
     try {
@@ -139,6 +141,20 @@ export default function BookingPage() {
                 <option key={w.value} value={w.value}>{w.label}</option>
               ))}
             </select>
+          </div>
+
+          {/* Delivery Address */}
+          <div>
+            <label className="text-slate-500 uppercase text-[9px] tracking-widest block mb-1">Delivery Address</label>
+            <textarea
+              id="input-address"
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+              placeholder="House/Flat No, Street, Landmark"
+              rows={2}
+              className="w-full bg-slate-700 text-white rounded-lg p-3 text-sm border border-slate-600 focus:ring-2 focus:ring-teal-500 focus:outline-none transition-all resize-none"
+            />
           </div>
 
           {/* Volume Selector */}

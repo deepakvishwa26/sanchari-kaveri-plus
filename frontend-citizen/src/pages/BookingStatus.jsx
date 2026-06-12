@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, Clock } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Clock, Info } from 'lucide-react';
 import StatusTimeline from '../components/StatusTimeline';
 
 export default function BookingStatus() {
@@ -62,14 +62,29 @@ export default function BookingStatus() {
             </p>
           </div>
 
-          {/* ── Confirm CTA ── */}
+          {/* ── OTP Info Note (citizen sees this, driver enters it) ── */}
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <Info size={16} className="text-[#0A7A8F] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-white text-sm font-semibold mb-1">
+                  OTP verification at delivery
+                </p>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  When the tanker arrives, share your OTP with the driver to confirm delivery. Your OTP was shown on the booking confirmation screen.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Back to Booking ── */}
           <button
-            id="btn-enter-otp"
-            onClick={() => navigate(`/confirm/${displayId}`)}
-            className="w-full bg-[#0A7A8F] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-teal-400 transition-all duration-200 active:scale-[0.98]"
+            id="btn-new-booking"
+            onClick={() => navigate('/book')}
+            className="w-full bg-slate-800 border border-[#0A7A8F] rounded-xl py-3 text-sky-400 font-semibold flex items-center justify-center gap-2 hover:bg-slate-700 transition-all duration-200 active:scale-[0.98]"
           >
             <ShieldCheck size={18} />
-            <span>Tanker arrived? Enter OTP</span>
+            <span>Book another tanker</span>
           </button>
 
         </div>
